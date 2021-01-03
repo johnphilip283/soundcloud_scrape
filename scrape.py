@@ -1,28 +1,26 @@
 import requests
 import json
 import os
-from pydub import AudioSegment
-import sys
 import argparse
+from pydub import AudioSegment
+from pydub.playback import play
+from io import BytesIO
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-o', '-output', type=str, required=True, default="MADEON" help='Output folder for mp3 snippets.')
-parser.add_argument('-p', '-playlist', type=str, required=True, default="playlist.m3u8", help='Playlist file in the .m3u8 format.')
-parser.add_argument('-f', '-final_track_name', type=str, required=True, default="MADEON_SET.mp3", help='Final track name.')
-
-print(parser.parse_args())
-
-import sys
-sys.exit()
+parser.add_argument('-o', '-output', type=str, default="MADEON", help='Output folder for mp3 snippets.')
+parser.add_argument('-p', '-playlist', type=str, default="playlist.m3u8", help='Playlist file in the .m3u8 format.')
+parser.add_argument('-f', '-final_track_name', type=str, default="MADEON_SET.mp3", help='Final track name.')
 
 args = parser.parse_args()
 
-FOLDER_NAME = 'MADEON'
+playlist_file = args.p
+folder_name = args.o
+final_track_name = args.f
 
 if __name__ == '__main__':
   
-  folder = os.path.join(os.getcwd(), FOLDER_NAME)
+  folder = os.path.join(os.getcwd(), folder_name)
 
   if not os.path.exists(folder):
     os.mkdir(folder)
@@ -47,19 +45,17 @@ if __name__ == '__main__':
 
   final_track = None
   count = 1
-  with open('playlist.m3u8', 'r') as playlist:
+  with open(playlist_file, 'r') as playlist:
     for line in playlist:
       if line.startswith('https://'):
-        with open(f"{folder}/{count}.mp3", 'wb') as outfile:
-          res = requests.get(line.strip(), headers=headers)
-          print(f"Downloading snippet {count}...")
-          if res.ok:
-            outfile.write(res.content)
-            snippet = AudioSegment.from_mp3(f"{folder}/{i}.mp3")
-            if not final_track:
-              final_track = snippet
-            else:
-              final_track += snippet
-          count += 1
+        res = requests.get(line.strip(), headers=headers)
+        print(f"Downloading snippet {count}...")
+        if res.ok:
+          snippet = AudioSegment.from_mp3(BytesIO(res.content))
+          if final_track:
+            final_track += snippet
+          else:
+            final_track = snippet
+        count += 1
   
-  beeg_song.export("MADEON_SET.mp3", format="mp3")
+  final_track.export(final_track_name, format="mp3")
